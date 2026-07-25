@@ -137,7 +137,19 @@ CI runs formatting, linting, type checks, tests, coverage, Bandit, dependency au
 
 ## Screenshots
 
-Recommended repository/LinkedIn captures are listed in the [demo walkthrough](docs/DEMO_WALKTHROUGH.md): the welcome workspace, an approved research plan, generated Excel and PowerPoint outputs, voice transcript review, mock WhatsApp confirmation, analytics, and green CI. Use sanitized demo data and never show credentials, session cookies, private content, or full phone numbers.
+**Workspace home with quick-start actions**
+
+![workspace](docs/screenshots/workspace.png)
+
+**Streaming chat conversation in demo mode**
+
+![chat](docs/screenshots/chat.png)
+
+**Sidebar navigation and conversation history**
+
+![sidebar](docs/screenshots/sidebar.png)
+
+Additional captures for LinkedIn and portfolio use are listed in the [demo walkthrough](docs/DEMO_WALKTHROUGH.md).
 
 ## Known limitations
 
