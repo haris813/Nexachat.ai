@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="NexaChat AI - a multimodal AI productivity and automation workspace." />
+  <meta name="theme-color" content="#0a0d14" />
+  <title>NexaChat AI - Multimodal AI Workspace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Workspace navigation">
+      <div class="brand-row">
+        <a class="brand" href="/" aria-label="NexaChat AI home">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span>NexaChat <strong>AI</strong></span>
+        </a>
+        <button class="icon-button mobile-only" id="closeSidebar" type="button" aria-label="Close navigation">×</button>
+      </div>
+
+      <button class="new-chat-button" id="newChatButton" type="button">
+        <span class="button-icon" aria-hidden="true">＋</span>
+        New task
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <nav class="workspace-nav" aria-label="Workspace sections">
+        <button class="nav-item active" type="button" data-panel="chats"><span>◫</span> Chats</button>
+        <button class="nav-item" id="artifactsButton" type="button"><span>◇</span> Artifacts <b id="artifactCount">0</b></button>
+        <button class="nav-item" id="contactsButton" type="button"><span>◎</span> Contacts</button>
+        <button class="nav-item" id="statsButton" type="button"><span>⌁</span> Analytics</button>
+      </nav>
+
+      <label class="conversation-search">
+        <span aria-hidden="true">⌕</span>
+        <span class="sr-only">Search conversations</span>
+        <input id="conversationSearch" type="search" placeholder="Search conversations" autocomplete="off" />
+      </label>
+
+      <div class="sidebar-section-head">
+        <span>Conversations</span>
+        <button id="archiveFilterButton" type="button" aria-pressed="false">Archived</button>
+      </div>
+      <nav class="conversation-list" id="conversationList" aria-label="Conversation history"></nav>
+
+      <div class="sidebar-footer">
+        <div class="provider-card">
+          <span class="status-dot" id="providerDot"></span>
+          <div>
+            <strong id="providerName">Checking providers</strong>
+            <span id="providerHint">Loading secure configuration</span>
+          </div>
+        </div>
+        <button class="footer-button" id="settingsButton" type="button"><span>⚙</span> Workspace settings</button>
+        <button class="footer-button danger" id="clearAllButton" type="button"><span>⌫</span> Clear all chats</button>
+      </div>
+    </aside>
+
+    <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button desktop-hidden" id="openSidebar" type="button" aria-label="Open navigation">☰</button>
+          <div>
+            <span class="topbar-kicker">AI WORKSPACE</span>
+            <button class="conversation-title" id="conversationTitle" type="button" title="Rename conversation">New task</button>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="select-wrap" title="Tool mode">
+            <span class="sr-only">Tool mode</span>
+            <select id="toolModeSelect">
+              <option value="auto">Auto tools</option>
+              <option value="chat">Chat only</option>
+              <option value="research">Research</option>
+              <option value="create">Create file</option>
+            </select>
+          </label>
+          <label class="select-wrap compact-select" title="Assistant persona">
+            <span class="sr-only">Persona</span>
+            <select id="personaSelect"></select>
+          </label>
+          <label class="select-wrap model-select" title="AI model">
+            <span class="sr-only">AI model</span>
+            <select id="modelSelect"></select>
+          </label>
+          <button class="icon-button" id="duplicateButton" type="button" aria-label="Duplicate conversation" title="Duplicate">⧉</button>
+          <button class="icon-button" id="exportButton" type="button" aria-label="Export conversation" title="Export">⇩</button>
+          <button class="icon-button" id="themeButton" type="button" aria-label="Toggle theme" title="Toggle theme">◐</button>
+        </div>
+      </header>
+
+      <section class="chat-scroll" id="chatScroll">
+        <div class="welcome" id="welcomeState">
+          <div class="welcome-badge"><span class="pulse-dot"></span> MULTIMODAL PRODUCTIVITY AGENT</div>
+          <h1>Move from prompt to <em>finished work.</em></h1>
+          <p>Research current information, analyze uploads, create Office files, or prepare a confirmed WhatsApp action.</p>
+
+          <div class="command-bar">
+            <span aria-hidden="true">⌘</span>
+            <input id="commandInput" type="text" placeholder="Try “Research AI trends in India and create a 10-slide presentation”" />
+            <kbd>Enter</kbd>
+          </div>
+
+          <div class="prompt-grid">
+            <button class="prompt-card" data-prompt="Create an Excel file with the current top 10 richest people and their net worth.">
+              <span class="prompt-icon excel">X</span><span><b>Current data to Excel</b><small>Live research, sources sheet, chart</small></span><i>→</i>
+            </button>
+            <button class="prompt-card" data-prompt="Research the future of AI agents and create a 10-slide professional business presentation.">
+              <span class="prompt-icon slides">P</span><span><b>Research to slides</b><small>Verified sources, 16:9 PowerPoint</small></span><i>→</i>
+            </button>
+            <button class="prompt-card" data-prompt="Create a professional Word report from my uploaded document.">
+              <span class="prompt-icon word">W</span><span><b>File to report</b><small>Upload, extract, structure, export</small></span><i>→</i>
+            </button>
+            <button class="prompt-card" data-prompt="Analyze my uploaded sales CSV and create an Excel workbook with charts and insights.">
+              <span class="prompt-icon analyze">A</span><span><b>Analyze a dataset</b><small>Numeric profile, workbook preview</small></span><i>→</i>
+            </button>
+            <button class="prompt-card" data-prompt="Search the web for the latest OpenAI news and provide sources.">
+              <span class="prompt-icon web">⌕</span><span><b>Research the web</b><small>Current results with retrieval dates</small></span><i>→</i>
+            </button>
+            <button class="prompt-card" data-prompt="Send Rahul a WhatsApp message saying I will arrive at 7 PM.">
+              <span class="prompt-icon whatsapp">◉</span><span><b>Prepare WhatsApp</b><small>Exact preview, explicit confirmation</small></span><i>→</i>
+            </button>
+          </div>
+
+          <div class="trust-row" aria-label="Safety guarantees">
+            <span>✓ Live-data guardrails</span><span>✓ Private file storage</span><span>✓ Confirm-before-send</span>
+          </div>
+        </div>
+        <div class="message-list" id="messageList" aria-live="polite"></div>
+      </section>
+
+      <section class="composer-area" aria-label="Message composer">
+        <div class="attachment-strip" id="attachmentStrip"></div>
+        <div class="recording-strip hidden" id="recordingStrip">
+          <span class="recording-dot"></span>
+          <strong id="recordingTime">00:00</strong>
+          <div class="waveform" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <button id="pauseRecordingButton" type="button">Pause</button>
+          <button id="stopRecordingButton" type="button">Stop</button>
+          <button id="cancelRecordingButton" type="button">Cancel</button>
+        </div>
+        <form class="composer" id="composerForm">
+          <textarea id="messageInput" rows="1" maxlength="12000" placeholder="Ask NexaChat to research, analyze, create, or prepare an action…" aria-label="Task message"></textarea>
+          <div class="composer-bottom">
+            <div class="composer-tools">
+              <input id="fileInput" class="sr-only" type="file" multiple accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.json,.png,.jpg,.jpeg,.webp,.gif,.mp3,.wav,.m4a,.ogg,.webm" />
+              <button class="composer-tool" id="attachButton" type="button" aria-label="Attach files" title="Attach files">＋ <span>Attach</span></button>
+              <button class="composer-tool" id="voiceButton" type="button" aria-label="Record voice message" title="Record voice">● <span>Voice</span></button>
+              <span class="character-count" id="characterCount">0 / 12,000</span>
+            </div>
+            <button class="send-button" id="sendButton" type="submit" aria-label="Send task">
+              <span class="send-icon">↑</span><span class="stop-icon">■</span>
+            </button>
+          </div>
+        </form>
+        <p class="disclaimer">External actions are never performed without confirmation. Verify important AI output.</p>
+      </section>
+    </main>
+
+    <aside class="activity-rail" id="activityRail" aria-label="Task activity">
+      <div class="rail-head">
+        <div><span class="topbar-kicker">LIVE ACTIVITY</span><h2>Task execution</h2></div>
+        <span class="live-badge"><i></i> Live</span>
+      </div>
+      <div class="empty-activity" id="emptyActivity">
+        <span>⌁</span>
+        <strong>No task running</strong>
+        <p>Approved tool steps will appear here in real time.</p>
+      </div>
+      <div class="timeline hidden" id="taskTimeline"></div>
+
+      <div class="rail-divider"></div>
+      <div class="rail-section-head"><h3>Recent artifacts</h3><button id="viewAllArtifactsButton" type="button">View all</button></div>
+      <div class="recent-artifacts" id="recentArtifacts">
+        <p class="rail-empty">Generated files will appear here.</p>
+      </div>
+      <div class="rail-safety">
+        <span>◆</span>
+        <div><b>Action safety</b><p>WhatsApp sends require an exact recipient, message preview, and one-time confirmation.</p></div>
+      </div>
+    </aside>
+  </div>
+
+  <dialog class="app-dialog" id="planDialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">AI TASK PLAN</span><h2>Review before execution</h2></div>
+        <button class="icon-button" data-close="planDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <p class="dialog-copy">NexaChat interpreted your request and selected only the tools required for the result.</p>
+      <div class="plan-summary" id="planSummary"></div>
+      <div class="plan-steps" id="planSteps"></div>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="cancelPlanButton" type="button">Cancel task</button>
+        <button class="primary-button" id="approvePlanButton" type="button">Approve and run</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="app-dialog wide-dialog" id="artifactsDialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">ARTIFACT WORKSPACE</span><h2>Your generated files</h2></div>
+        <button class="icon-button" data-close="artifactsDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-chip active" data-artifact-filter="">All</button>
+        <button class="filter-chip" data-artifact-filter="excel">Excel</button>
+        <button class="filter-chip" data-artifact-filter="powerpoint">PowerPoint</button>
+        <button class="filter-chip" data-artifact-filter="word">Word</button>
+        <button class="filter-chip" data-artifact-filter="pdf">PDF</button>
+      </div>
+      <div class="artifact-library" id="artifactLibrary"></div>
+    </div>
+  </dialog>
+
+  <dialog class="app-dialog wide-dialog" id="contactsDialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">PRIVATE CONTACTS</span><h2>Contact manager</h2></div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="importContactsButton" type="button">Import CSV</button>
+          <input class="hidden" id="contactImportInput" type="file" accept=".csv,text/csv" />
+          <button class="icon-button" data-close="contactsDialog" type="button" aria-label="Close">×</button>
+        </div>
+      </div>
+      <div class="contacts-layout">
+        <form class="contact-form" id="contactForm">
+          <input type="hidden" id="contactId" />
+          <label>Name<input id="contactName" required maxlength="120" placeholder="Rahul Sharma" /></label>
+          <label>Phone with country code<input id="contactPhone" required placeholder="+91 98765 43210" /></label>
+          <label>Email<input id="contactEmail" type="email" placeholder="rahul@example.com" /></label>
+          <label>Relationship or label<input id="contactRelationship" maxlength="80" placeholder="Colleague" /></label>
+          <label>Notes<textarea id="contactNotes" rows="3" maxlength="2000" placeholder="Optional private notes"></textarea></label>
+          <div class="dialog-actions form-actions">
+            <button class="secondary-button" id="resetContactButton" type="button">Clear</button>
+            <button class="primary-button" type="submit">Save contact</button>
+          </div>
+        </form>
+        <div>
+          <label class="contact-search"><span class="sr-only">Search contacts</span><input id="contactSearch" type="search" placeholder="Search contacts" /></label>
+          <div class="contact-list" id="contactList"></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="app-dialog" id="whatsappDialog">
+    <div class="dialog-card confirmation-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">EXTERNAL ACTION</span><h2>Confirm WhatsApp send</h2></div>
+        <button class="icon-button" data-close="whatsappDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="warning-banner">Nothing has been sent. Review every field before confirming.</div>
+      <dl class="confirmation-details">
+        <div><dt>Recipient</dt><dd id="confirmRecipient"></dd></div>
+        <div><dt>Destination</dt><dd id="confirmPhone"></dd></div>
+        <div><dt>Type</dt><dd id="confirmType"></dd></div>
+        <div><dt>Exact content</dt><dd id="confirmBody"></dd></div>
+        <div><dt>Provider mode</dt><dd id="confirmMode"></dd></div>
+      </dl>
+      <label class="confirm-check"><input id="confirmCheck" type="checkbox" /> I reviewed the recipient and exact content and want to send it.</label>
+      <div class="dialog-actions">
+        <button class="secondary-button" data-close="whatsappDialog" type="button">Keep as draft</button>
+        <button class="danger-button" id="confirmSendButton" type="button" disabled>Confirm and send</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="app-dialog" id="voiceDialog">
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">VOICE MESSAGE</span><h2>Review your recording</h2></div>
+        <button class="icon-button" data-close="voiceDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <audio id="voicePreview" controls></audio>
+      <label class="field-label" for="transcriptInput">Transcript (editable)</label>
+      <textarea id="transcriptInput" rows="6" placeholder="Transcribe the recording, then review or edit it."></textarea>
+      <p class="dialog-copy" id="voiceStatus">The original audio is attached privately. Transcription never executes a task automatically.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="useOriginalAudioButton" type="button">Use original audio</button>
+        <button class="secondary-button" id="transcribeButton" type="button">Transcribe</button>
+        <button class="primary-button" id="useTranscriptButton" type="button">Use transcript</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="app-dialog" id="settingsDialog">
+    <form class="dialog-card" id="settingsForm">
+      <div class="dialog-header">
+        <div><span class="eyebrow">WORKSPACE SETTINGS</span><h2>Behavior and memory</h2></div>
+        <button class="icon-button" data-close="settingsDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <section class="account-panel">
+        <div><span class="eyebrow">ACCOUNT</span><strong id="accountStatus">Checking session…</strong></div>
+        <div class="account-fields" id="accountFields">
+          <input id="accountName" maxlength="100" autocomplete="name" placeholder="Display name (for registration)" />
+          <input id="accountEmail" type="email" maxlength="255" autocomplete="email" placeholder="Email address" />
+          <input id="accountPassword" type="password" minlength="12" autocomplete="current-password" placeholder="Password (12+ characters)" />
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="loginButton" type="button">Sign in</button>
+          <button class="secondary-button" id="registerButton" type="button">Create account</button>
+          <button class="secondary-button hidden" id="logoutButton" type="button">Sign out</button>
+        </div>
+      </section>
+      <section class="account-panel">
+        <div><span class="eyebrow">SERVER PROVIDERS</span><strong id="providerConfigStatus">Loading configuration…</strong></div>
+        <p>Credentials are configured only through server environment variables and are never exposed to this browser.</p>
+      </section>
+      <div id="workspaceSettingsFields">
+        <label class="field-label" for="systemPromptInput">Conversation instructions</label>
+        <textarea id="systemPromptInput" rows="5" placeholder="Give the assistant private instructions for this conversation."></textarea>
+        <div class="field-meta"><span id="systemPromptCount">0 / 4,000</span></div>
+        <div class="settings-grid">
+          <label>Language<select id="languagePreference"><option value="auto">Auto detect</option><option value="en">English</option><option value="hi">Hindi</option><option value="hinglish">Hinglish</option></select></label>
+          <label>Presentation theme<select id="themePreference"><option value="modern_light">Modern light</option><option value="minimal_dark">Minimal dark</option><option value="professional_business">Business</option><option value="startup_pitch">Startup pitch</option><option value="academic">Academic</option><option value="technical_architecture">Technical</option></select></label>
+          <label class="toggle-label"><input id="autoSpeakPreference" type="checkbox" /> Automatically speak responses</label>
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="clearMemoryButton" type="button">Delete saved memory</button>
+          <button class="secondary-button" id="resetInstructionsButton" type="button">Reset instructions</button>
+          <button class="primary-button" type="submit">Save settings</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="app-dialog" id="statsDialog">
+    <div class="dialog-card analytics-card">
+      <div class="dialog-header">
+        <div><span class="eyebrow">WORKSPACE ANALYTICS</span><h2>Usage and reliability</h2></div>
+        <button class="icon-button" data-close="statsDialog" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="provider-breakdown" id="providerBreakdown"></div>
+      <p class="dialog-copy">Only measured workspace events are shown. No fabricated performance claims.</p>
+    </div>
+  </dialog>
+
+  <div class="toast-region" id="toastRegion" aria-live="assertive"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

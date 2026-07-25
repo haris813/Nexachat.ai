@@ -1,0 +1,393 @@
+openapi: 3.1.0
+info:
+  title: NexaChat AI API
+  version: 2.0.0
+  description: Owner-isolated multimodal AI workspace API. See API.md for the full behavioral contract.
+servers:
+  - url: http://localhost:5000
+components:
+  parameters:
+    CsrfToken:
+      in: header
+      name: X-CSRF-Token
+      required: true
+      schema: { type: string }
+      description: Session-bound token returned by GET /api/config.
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    Conversation:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        persona: { type: string }
+        model: { type: string }
+        is_pinned: { type: boolean }
+        is_archived: { type: boolean }
+        message_count: { type: integer }
+    Plan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        request_text: { type: string }
+        intent: { type: string }
+        status: { type: string }
+        requires_confirmation: { type: boolean }
+        steps: { type: array, items: { type: object } }
+    Upload:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        original_name: { type: string }
+        mime_type: { type: string }
+        size_bytes: { type: integer }
+        sha256: { type: string }
+        status: { type: string }
+    Artifact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        artifact_type: { type: string }
+        mime_type: { type: string }
+        size_bytes: { type: integer }
+        validation_status: { type: string }
+        download_url: { type: string }
+    Contact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        phone_masked: { type: string }
+        relationship: { type: [string, "null"] }
+paths:
+  /api/health:
+    get:
+      summary: Liveness
+      responses:
+        "200": { description: Alive }
+  /api/ready:
+    get:
+      summary: Database readiness
+      responses:
+        "200": { description: Ready }
+  /api/config:
+    get:
+      summary: Public capability configuration and CSRF token
+      responses:
+        "200": { description: Configuration }
+  /api/conversations:
+    get:
+      summary: List owned conversations
+      responses:
+        "200":
+          description: Conversation list
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Conversation" } }
+    post:
+      summary: Create conversation
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model: { type: string }
+                persona: { type: string, enum: [general, coding, study, career, product] }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Conversation" }
+        "403":
+          description: CSRF rejected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      summary: Delete all owned conversations
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted }
+  /api/conversations/{conversationId}:
+    parameters:
+      - in: path
+        name: conversationId
+        required: true
+        schema: { type: integer }
+    get:
+      summary: Get conversation with messages
+      responses:
+        "200": { description: Conversation }
+        "404": { description: Missing or unowned }
+    patch:
+      summary: Update title, model, persona, instructions, or pin
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Updated }
+    delete:
+      summary: Delete conversation
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "204": { description: Deleted }
+  /api/conversations/{conversationId}/messages:
+    post:
+      summary: Send message and receive SSE tokens
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - in: path
+          name: conversationId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+                model: { type: string }
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: { schema: { type: string } }
+        "409":
+          description: Current data requires a live-research plan
+  /api/plans:
+    get:
+      summary: List recent plans
+      responses:
+        "200": { description: Plans }
+    post:
+      summary: Create persisted task plan
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request]
+              properties:
+                request: { type: string }
+                conversation_id: { type: [integer, "null"] }
+                upload_ids: { type: array, items: { type: string, format: uuid } }
+      responses:
+        "201":
+          description: Proposed plan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Plan" }
+  /api/plans/{planId}/execute:
+    post:
+      summary: Execute plan and receive progress SSE
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - in: path
+          name: planId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Progress stream
+          content:
+            text/event-stream: { schema: { type: string } }
+  /api/plans/{planId}/cancel:
+    post:
+      summary: Cancel non-terminal plan
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - in: path
+          name: planId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Cancelled }
+  /api/uploads:
+    get:
+      summary: List owned uploads
+      responses:
+        "200":
+          description: Uploads
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Upload" } }
+    post:
+      summary: Upload and validate a file
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Upload" }
+        "400": { description: Invalid file }
+        "413": { description: File too large }
+  /api/speech:
+    post:
+      summary: Synthesize speech
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+                voice: { type: string }
+      responses:
+        "200":
+          description: MP3 audio
+          content:
+            audio/mpeg: { schema: { type: string, format: binary } }
+  /api/artifacts:
+    get:
+      summary: List/filter artifacts
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string }
+      responses:
+        "200":
+          description: Artifacts
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Artifact" } }
+  /api/artifacts/{artifactId}/download:
+    get:
+      summary: Download an owned artifact
+      parameters:
+        - in: path
+          name: artifactId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Attachment bytes }
+        "404": { description: Missing or unowned }
+  /api/contacts:
+    get:
+      summary: Search/list contacts
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        "200":
+          description: Contacts
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Contact" } }
+    post:
+      summary: Create encrypted contact
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone]
+              properties:
+                name: { type: string }
+                phone: { type: string }
+                email: { type: string }
+                relationship: { type: string }
+                notes: { type: string }
+      responses:
+        "201": { description: Created }
+        "409": { description: Duplicate phone }
+  /api/whatsapp/prepare:
+    post:
+      summary: Prepare a pending-confirmation WhatsApp action
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contact_id]
+              properties:
+                contact_id: { type: string, format: uuid }
+                message_type: { type: string, enum: [text, audio] }
+                body: { type: string }
+                upload_id: { type: string, format: uuid }
+      responses:
+        "201": { description: Prepared with one-time confirmation token }
+  /api/whatsapp/{messageId}/confirm-send:
+    post:
+      summary: Confirm exact pending action and invoke provider
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+        - in: path
+          name: messageId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation_token]
+              properties:
+                confirmation_token: { type: string }
+      responses:
+        "200": { description: Provider accepted or mock recorded }
+        "400": { description: Invalid/expired confirmation }
+  /api/preferences:
+    get:
+      summary: Get user preferences and explicit memory
+      responses:
+        "200": { description: Preferences }
+    patch:
+      summary: Update preferences
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Updated }
+  /api/auth/register:
+    post:
+      summary: Register account
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+                display_name: { type: string }
+      responses:
+        "201": { description: Registered and logged in }

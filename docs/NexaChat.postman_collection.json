@@ -1,0 +1,233 @@
+{
+  "info": {
+    "name": "NexaChat AI 2.0",
+    "description": "Run Get Config first to establish a cookie session and CSRF token. SSE requests are easiest to inspect in Postman Desktop.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "conversationId", "value": "1" },
+    { "key": "planId", "value": "" },
+    { "key": "contactId", "value": "" },
+    { "key": "whatsappId", "value": "" },
+    { "key": "confirmationToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Platform",
+      "item": [
+        {
+          "name": "Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/health" }
+        },
+        {
+          "name": "Get Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('csrfToken', body.csrf_token);"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/config" }
+        },
+        {
+          "name": "Analytics",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/analytics" }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('conversationId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"persona\":\"product\",\"model\":\"gpt-5-mini\"}" },
+            "url": "{{baseUrl}}/api/conversations"
+          }
+        },
+        {
+          "name": "Stream Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"content\":\"Design a safe document analysis workflow\"}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+          }
+        },
+        {
+          "name": "List Conversations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/conversations" }
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "Create Plan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('planId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"request\":\"Research current AI workspace trends and create a Word report\",\"conversation_id\":{{conversationId}},\"upload_ids\":[]}"
+            },
+            "url": "{{baseUrl}}/api/plans"
+          }
+        },
+        {
+          "name": "Execute Plan (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "url": "{{baseUrl}}/api/plans/{{planId}}/execute"
+          }
+        },
+        {
+          "name": "Get Plan",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/plans/{{planId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Files and Artifacts",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-CSRF-Token", "value": "{{csrfToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": "{{baseUrl}}/api/uploads"
+          }
+        },
+        {
+          "name": "List Artifacts",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/artifacts" }
+        },
+        {
+          "name": "Generate Speech",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"text\":\"Your report is ready.\",\"voice\":\"alloy\"}" },
+            "url": "{{baseUrl}}/api/speech"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts and WhatsApp",
+      "item": [
+        {
+          "name": "Create Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('contactId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"name\":\"Rahul Demo\",\"phone\":\"+919000000001\",\"relationship\":\"Colleague\"}" },
+            "url": "{{baseUrl}}/api/contacts"
+          }
+        },
+        {
+          "name": "Prepare WhatsApp",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('whatsappId', body.id);",
+                  "pm.collectionVariables.set('confirmationToken', body.confirmation_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"contact_id\":\"{{contactId}}\",\"message_type\":\"text\",\"body\":\"I will arrive 20 minutes late.\"}"
+            },
+            "url": "{{baseUrl}}/api/whatsapp/prepare"
+          }
+        },
+        {
+          "name": "Confirm and Send",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-CSRF-Token", "value": "{{csrfToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"confirmation_token\":\"{{confirmationToken}}\"}" },
+            "url": "{{baseUrl}}/api/whatsapp/{{whatsappId}}/confirm-send"
+          }
+        }
+      ]
+    }
+  ]
+}

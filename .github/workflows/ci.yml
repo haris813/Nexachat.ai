@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -r requirements-dev.txt
+      - name: Lint and formatting
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Type checking
+        run: mypy app scripts
+      - name: Unit and API tests
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml
+      - name: Security checks
+        run: |
+          bandit -q -r app
+          pip-audit -r requirements.txt
+      - name: Syntax and configuration checks
+        run: |
+          python -m compileall -q app scripts tests app.py wsgi.py
+          node --check static/js/app.js
+          python scripts/validate_repo.py
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import yaml
+
+          for path in Path(".").rglob("*.json"):
+              if ".venv" not in path.parts:
+                  json.loads(path.read_text(encoding="utf-8"))
+          for path in [*Path(".").rglob("*.yml"), *Path(".").rglob("*.yaml")]:
+              if ".venv" not in path.parts:
+                  yaml.safe_load(path.read_text(encoding="utf-8"))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build hardened image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: nexachat-ai:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

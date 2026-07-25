@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NexaChat: Install dependencies",
+      "type": "shell",
+      "command": "python -m pip install -r requirements-dev.txt",
+      "problemMatcher": []
+    },
+    {
+      "label": "NexaChat: Test",
+      "type": "shell",
+      "command": "pytest --cov=app --cov-report=term-missing",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "NexaChat: Docker Compose",
+      "type": "shell",
+      "command": "docker compose up --build",
+      "problemMatcher": []
+    }
+  ]
+}
