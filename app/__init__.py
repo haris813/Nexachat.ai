@@ -10,7 +10,7 @@ from flask import Flask, g, jsonify, request, session
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
 
-from .config import Config
+from .config import Config, validate_ai_configuration
 from .extensions import db, limiter, metrics, migrate
 from .models import User
 from .routes.api import api_bp
@@ -28,6 +28,14 @@ def create_app(config_object: type[Config] = Config) -> Flask:
     app.config.from_object(Config)
     if config_object is not Config:
         app.config.from_object(config_object)
+    configure_logging(app)
+    ai_status = validate_ai_configuration(app.config, require_credentials=False)
+    app.config["AI_PROVIDER"] = ai_status["ai_provider"]
+    app.logger.info("AI provider: %s", ai_status["ai_provider"])
+    app.logger.info("AI model: %s", ai_status["ai_model"])
+    app.logger.info("AI configured: %s", "yes" if ai_status["ai_configured"] else "no")
+    if ai_status["ai_provider"] == "openrouter":
+        app.logger.info("OpenRouter base URL: %s", app.config["OPENROUTER_BASE_URL"])
     if app.config.get("SENTRY_DSN"):
         import sentry_sdk
 
@@ -50,7 +58,10 @@ def create_app(config_object: type[Config] = Config) -> Flask:
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(workspace_bp, url_prefix="/api")
 
-    configure_logging(app)
+    @app.get("/health")
+    def root_health():
+        return jsonify({"status": "ok", "service": "nexachat-ai"})
+
     register_request_hooks(app)
     register_error_handlers(app)
 
@@ -118,7 +129,25 @@ def register_error_handlers(app: Flask) -> None:
     def not_found(_error):
         if request.path.startswith("/api/"):
             return jsonify({"error": "Resource not found", "request_id": g.get("request_id")}), 404
-        return "Not found", 404
+        return (
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            "<title>404 — NexaChat AI</title>"
+            "<style>"
+            "body{margin:0;min-height:100vh;display:grid;place-items:center;"
+            "background:#080b11;color:#f4f6fb;font-family:Inter,system-ui,sans-serif;text-align:center}"
+            "h1{font-size:4rem;margin:0;background:linear-gradient(145deg,#806cff,#4f8cff);"
+            "-webkit-background-clip:text;-webkit-text-fill-color:transparent}"
+            "p{color:#9aa4b5;margin:1rem 0 2rem}"
+            "a{display:inline-block;padding:.75rem 1.5rem;background:linear-gradient(145deg,#806cff,#4f8cff);"
+            "color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:.875rem}"
+            "a:hover{filter:brightness(1.1)}"
+            "</style></head><body>"
+            "<div><h1>404</h1><p>This page doesn't exist.</p>"
+            '<a href="/">Back to NexaChat AI</a></div>'
+            "</body></html>",
+            404,
+        )
 
     @app.errorhandler(429)
     def rate_limited(_error):

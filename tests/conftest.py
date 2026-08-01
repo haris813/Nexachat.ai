@@ -15,6 +15,10 @@ class TestConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {}
     AI_PROVIDER = "demo"
+    AI_DEMO_MODE = True
+    OPENROUTER_API_KEY = ""
+    OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL = "openrouter/free"
     OPENAI_API_KEY = ""
     OPENAI_MODEL = "gpt-5-mini"
     OPENAI_ALLOWED_MODELS = ["gpt-5-mini"]

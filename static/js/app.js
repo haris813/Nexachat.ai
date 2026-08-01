@@ -4,7 +4,10 @@ const state = {
   config: null,
   conversations: [],
   active: null,
+  isSending: false,
   streaming: false,
+  activeRequestId: null,
+  handledCompletionIds: new Set(),
   abortController: null,
   search: "",
   showArchived: false,
@@ -110,6 +113,34 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function formatModelName(model) {
+  if (!model) return "NexaChat AI";
+  const nameMap = {
+    "gpt-5-mini": "NexaChat 5 Mini",
+    "gpt-5-nano": "NexaChat 5 Nano",
+    "gpt-4.1-mini": "NexaChat 4.1 Mini",
+    "gpt-4o-mini": "NexaChat 4o Mini",
+    "gpt-4o": "NexaChat 4o",
+    "gpt-5": "NexaChat 5",
+    "gpt-4": "NexaChat 4",
+    "llama3.2": "NexaChat Local",
+    "openrouter/free": "NexaChat Free",
+    "openrouter/auto": "NexaChat Auto",
+    "demo": "NexaChat Demo",
+  };
+  if (nameMap[model]) return nameMap[model];
+
+  let formatted = String(model);
+  if (/^gpt[-_\s]*/i.test(formatted)) {
+    formatted = formatted.replace(/^gpt[-_\s]*/i, "NexaChat ");
+  }
+  return formatted
+    .split(/[-_]/)
+    .map((word) => (word.length <= 3 && word === word.toLowerCase() ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
+
+
 function renderInline(text) {
   return text
     .replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -202,7 +233,8 @@ function syncComposer() {
   els.input.style.height = `${Math.min(els.input.scrollHeight, 170)}px`;
   const max = state.config?.max_input_chars || 12000;
   els.charCount.textContent = `${els.input.value.length.toLocaleString()} / ${max.toLocaleString()}`;
-  els.send.disabled = (!els.input.value.trim() && !state.streaming) || state.attachments.some((item) => item.uploading);
+  els.send.disabled = state.isSending ||
+    ((!els.input.value.trim() && !state.streaming) || state.attachments.some((item) => item.uploading));
   els.send.classList.toggle("streaming", state.streaming);
   els.send.setAttribute("aria-label", state.streaming ? "Stop task" : "Send task");
 }
@@ -280,7 +312,7 @@ function createMessageElement(message, pending = false) {
   article.dataset.messageId = message.id || "pending";
   const isAssistant = message.role === "assistant";
   const stats = [
-    message.model,
+    formatModelName(message.model),
     message.output_tokens ? `${message.output_tokens} tokens` : null,
     message.latency_ms ? `${(message.latency_ms / 1000).toFixed(1)}s` : null,
   ].filter(Boolean).join(" · ");
@@ -324,7 +356,14 @@ function renderConversation() {
   els.messageList.replaceChildren(...messages.map((message) => createMessageElement(message)));
   els.welcome.classList.toggle("hidden", messages.length > 0);
   els.conversationTitle.textContent = state.active?.title || "New task";
-  if (state.active?.model) els.model.value = state.active.model;
+  if (state.active?.model) {
+    const exists = [...els.model.options].some((option) => option.value === state.active.model);
+    if (!exists && state.active.model) {
+      const option = new Option(formatModelName(state.active.model), state.active.model);
+      els.model.appendChild(option);
+    }
+    els.model.value = state.active.model;
+  }
   syncPersonaSelect();
   renderSidebar();
   scrollToBottom(false);
@@ -503,13 +542,15 @@ function clearComposerAfterSend() {
 
 async function sendMessage(content = null) {
   let message = (content ?? els.input.value).trim();
-  if (!message || state.streaming) return;
-  if (!state.active) await createConversation();
-  if (els.toolMode.value === "research" && !/research|search|latest|current/i.test(message)) {
-    message = `Research the web for: ${message}`;
-  }
-  if (els.toolMode.value !== "chat") {
-    try {
+  if (!message || state.streaming || state.isSending) return;
+  state.isSending = true;
+  syncComposer();
+  try {
+    if (!state.active) await createConversation();
+    if (els.toolMode.value === "research" && !/research|search|latest|current/i.test(message)) {
+      message = `Research the web for: ${message}`;
+    }
+    if (els.toolMode.value !== "chat") {
       const result = await api("/api/plans", {
         method: "POST",
         body: JSON.stringify({
@@ -526,15 +567,19 @@ async function sendMessage(content = null) {
         await loadConversations();
         return;
       }
-    } catch (error) {
-      toast(error.message, "error");
-      return;
     }
+    await sendDirectChat(message);
+  } catch (error) {
+    toast(error.message, "error");
+  } finally {
+    state.isSending = false;
+    syncComposer();
   }
-  await sendDirectChat(message);
 }
 
 async function sendDirectChat(message) {
+  const requestId = crypto.randomUUID();
+  state.activeRequestId = requestId;
   optimisticUserMessage(message);
   const pending = { role: "assistant", content: "", created_at: new Date().toISOString() };
   const assistantNode = createMessageElement(pending, true);
@@ -545,10 +590,14 @@ async function sendDirectChat(message) {
   try {
     const result = await streamChat(
       `/api/conversations/${state.active.id}/messages`,
-      { content: message, model: els.model.value },
+      { content: message, model: els.model.value, request_id: requestId },
       assistantNode,
     );
+    if (state.activeRequestId !== requestId) return;
     const stored = result.donePayload?.message || { ...pending, content: result.fullText };
+    const completionId = stored.id || requestId;
+    if (state.handledCompletionIds.has(completionId)) return;
+    state.handledCompletionIds.add(completionId);
     state.active.messages.push(stored);
     if (result.donePayload?.conversation) {
       state.active = { ...state.active, ...result.donePayload.conversation, messages: state.active.messages };
@@ -568,6 +617,7 @@ async function sendDirectChat(message) {
   } finally {
     state.streaming = false;
     state.abortController = null;
+    if (state.activeRequestId === requestId) state.activeRequestId = null;
     syncComposer();
     els.input.focus();
   }
@@ -1141,7 +1191,8 @@ function renderAccount(user) {
 
 function renderProviderConfiguration() {
   byId("providerConfigStatus").textContent =
-    `AI: ${state.config.provider} · Search: ${state.config.search_provider} · WhatsApp: ${state.config.whatsapp_mode}`;
+    `AI: ${state.config.ai_provider} (${state.config.ai_configured ? "configured" : "not configured"}) · ` +
+    `Search: ${state.config.search_provider} · WhatsApp: ${state.config.whatsapp_mode}`;
 }
 
 async function authenticate(mode) {
@@ -1250,21 +1301,20 @@ async function openStats() {
   try {
     const stats = await api("/api/analytics");
     const cards = [
-      ["Conversations", stats.conversations],
-      ["Artifacts", stats.artifacts],
-      ["Tool calls", stats.tool_calls],
-      ["Web searches", stats.web_searches],
-      ["Successful tasks", stats.successful_tasks],
-      ["Failed tasks", stats.failed_tasks],
-      ["Avg tool latency", stats.average_tool_latency_ms ? `${formatNumber(stats.average_tool_latency_ms)} ms` : "—"],
-      ["Estimated cost", `$${Number(stats.estimated_ai_cost_usd || 0).toFixed(4)}`],
-      ["Pending confirms", stats.pending_confirmations],
+      ["Conversations", stats.conversations ?? 0],
+      ["Messages", stats.messages ?? 0],
+      ["User messages", stats.user_messages ?? 0],
+      ["Assistant messages", stats.assistant_messages ?? 0],
+      ["Input tokens", stats.input_tokens ?? 0],
+      ["Output tokens", stats.output_tokens ?? 0],
+      ["Avg latency", stats.average_latency_ms ? `${formatNumber(stats.average_latency_ms)} ms` : "—"],
     ];
     els.statsGrid.innerHTML = cards.map(([label, value]) =>
       `<article class="stat-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`,
     ).join("");
-    els.providerBreakdown.innerHTML = stats.most_used_tools.length
-      ? `<h3>Most-used tools</h3>${stats.most_used_tools.map(([tool, count]) =>
+    const tools = stats.most_used_tools || [];
+    els.providerBreakdown.innerHTML = tools.length
+      ? `<h3>Most-used tools</h3>${tools.map(([tool, count]) =>
           `<div class="provider-row"><span>${escapeHtml(tool)}</span><strong>${formatNumber(count)} calls</strong></div>`).join("")}`
       : "<p>No tool calls have been measured yet.</p>";
   } catch (error) {
@@ -1434,6 +1484,30 @@ function setupEvents() {
     }
     if (event.key === "Escape" && state.streaming) state.abortController?.abort();
   });
+
+  // Landing View Navigation Events
+  const showLandingView = () => {
+    byId("landingView")?.classList.remove("hidden");
+    byId("appShell")?.classList.add("hidden");
+  };
+  const showWorkspaceView = () => {
+    byId("landingView")?.classList.add("hidden");
+    byId("appShell")?.classList.remove("hidden");
+  };
+
+  byId("launchWorkspaceBtn")?.addEventListener("click", showWorkspaceView);
+  byId("heroStartBtn")?.addEventListener("click", showWorkspaceView);
+  byId("heroDemoBtn")?.addEventListener("click", showWorkspaceView);
+  byId("ctaLaunchBtn")?.addEventListener("click", showWorkspaceView);
+  byId("landingLoginBtn")?.addEventListener("click", () => {
+    showWorkspaceView();
+    openSettings();
+  });
+  byId("brandLink")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    showLandingView();
+  });
+  byId("landingToggleNav")?.addEventListener("click", showLandingView);
 }
 
 async function init() {
@@ -1444,21 +1518,27 @@ async function init() {
     state.config = await api("/api/config");
     renderProviderConfiguration();
     els.model.innerHTML = state.config.models.map((model) =>
-      `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join("");
+      `<option value="${escapeHtml(model)}">${escapeHtml(formatModelName(model))}</option>`).join("");
     els.model.value = state.config.default_model;
     els.persona.innerHTML = state.config.personas.map((persona) =>
       `<option value="${escapeHtml(persona.id)}">${escapeHtml(persona.label)}</option>`).join("");
     els.input.maxLength = state.config.max_input_chars;
     els.systemPrompt.maxLength = state.config.max_system_prompt_chars;
     const provider = state.config.provider;
-    els.providerName.textContent = provider === "openai"
-      ? "OpenAI connected"
-      : provider === "ollama"
-        ? "Ollama connected"
-        : "Demo mode";
+    els.providerName.textContent = !state.config.ai_configured
+      ? `${provider === "openrouter" ? "OpenRouter" : "AI provider"} not configured`
+      : provider === "openai"
+        ? "OpenAI connected"
+        : provider === "openrouter"
+          ? "OpenRouter configured"
+          : provider === "ollama"
+            ? "Ollama connected"
+            : "Demo mode";
     const research = state.config.search_provider === "demo" ? "research off" : `${state.config.search_provider} search`;
-    els.providerHint.textContent = `${provider} · ${research} · WhatsApp ${state.config.whatsapp_mode}`;
-    els.providerDot.classList.toggle("demo", provider === "demo");
+    els.providerHint.textContent = !state.config.ai_configured && provider === "openrouter"
+      ? "Add OPENROUTER_API_KEY to the backend .env file and restart the backend."
+      : `${provider} · ${research} · WhatsApp ${state.config.whatsapp_mode}`;
+    els.providerDot.classList.toggle("demo", provider === "demo" || !state.config.ai_configured);
     state.user = await api("/api/auth/me");
     if (state.config.auth_required && state.user?.is_guest) {
       renderAccount(state.user);

@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from flask import Blueprint, Response, current_app, jsonify, request, session, stream_with_context
 from sqlalchemy import desc, text
 
+from ..config import AIConfigurationError, ai_configuration_status
 from ..extensions import (
     ai_requests_total,
     ai_response_latency_seconds,
@@ -15,7 +16,7 @@ from ..extensions import (
     limiter,
 )
 from ..models import Conversation, ConversationState, Message, User, UserPreference
-from ..services.ai import AIService, StreamResult
+from ..services.ai import AIProviderError, AIService, StreamResult
 from ..services.orchestrator import CURRENT_TERMS
 
 api_bp = Blueprint("api", __name__)
@@ -68,11 +69,22 @@ def _conversation_dict(conversation: Conversation, include_messages: bool = Fals
 
 def _validate_model(model: str):
     provider = current_app.config["AI_PROVIDER"]
+    if provider == "openrouter" and model != current_app.config["OPENROUTER_MODEL"]:
+        return jsonify({"error": "Unsupported OpenRouter model"}), 400
     if provider == "openai" and model not in current_app.config["OPENAI_ALLOWED_MODELS"]:
         return jsonify({"error": "Unsupported model"}), 400
     if provider == "ollama" and model != current_app.config["OLLAMA_MODEL"]:
         return jsonify({"error": "Unsupported Ollama model"}), 400
     return model
+
+
+def _default_model() -> str:
+    provider = current_app.config["AI_PROVIDER"]
+    if provider == "openrouter":
+        return current_app.config["OPENROUTER_MODEL"]
+    if provider == "ollama":
+        return current_app.config["OLLAMA_MODEL"]
+    return current_app.config["OPENAI_MODEL"]
 
 
 def _persona_prompt(persona: str) -> tuple[str, str]:
@@ -113,15 +125,21 @@ def ready():
 @api_bp.get("/config")
 def public_config():
     provider = current_app.config["AI_PROVIDER"]
+    ai_status = ai_configuration_status(current_app.config)
     if provider == "ollama":
         models = [current_app.config["OLLAMA_MODEL"]]
         default_model = current_app.config["OLLAMA_MODEL"]
+    elif provider == "openrouter":
+        or_model = current_app.config["OPENROUTER_MODEL"]
+        models = [or_model]
+        default_model = or_model
     else:
         models = current_app.config["OPENAI_ALLOWED_MODELS"]
         default_model = current_app.config["OPENAI_MODEL"]
     return jsonify(
         {
             "provider": provider,
+            **ai_status,
             "models": models,
             "default_model": default_model,
             "personas": [{"id": key, "label": key.title()} for key in PERSONAS],
@@ -171,6 +189,12 @@ def workspace_stats():
     )
 
 
+@api_bp.get("/analytics")
+def workspace_analytics():
+    """Alias for /api/stats to match the frontend's expected endpoint."""
+    return workspace_stats()
+
+
 @api_bp.get("/conversations")
 def list_conversations():
     conversations = (
@@ -191,7 +215,7 @@ def create_conversation():
         ), 409
 
     payload = request.get_json(silent=True) or {}
-    requested_model = _validate_model(str(payload.get("model") or current_app.config["OPENAI_MODEL"]).strip())
+    requested_model = _validate_model(str(payload.get("model") or _default_model()).strip())
     if isinstance(requested_model, tuple):
         return requested_model
     persona, system_prompt = _persona_prompt(str(payload.get("persona") or "general"))
@@ -387,9 +411,9 @@ def _stream_conversation(
 
     @stream_with_context
     def generate():
-        service = AIService()
         result = StreamResult(provider=provider, model=requested_model)
         try:
+            service = AIService()
             generator = service.stream(history, system_prompt, requested_model)
             while True:
                 try:
@@ -431,6 +455,16 @@ def _stream_conversation(
                     "conversation": _conversation_dict(conversation),
                 },
             )
+        except (AIConfigurationError, AIProviderError) as error:
+            db.session.rollback()
+            ai_requests_total.labels(provider, requested_model, "error").inc()
+            current_app.logger.warning(
+                "AI request failed provider=%s model=%s error_type=%s",
+                provider,
+                requested_model,
+                type(error).__name__,
+            )
+            yield _json_event("error", {"message": str(error)})
         except Exception:
             db.session.rollback()
             ai_requests_total.labels(provider, requested_model, "error").inc()

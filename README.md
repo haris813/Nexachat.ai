@@ -1,166 +1,202 @@
-# NexaChat AI
+# NexaChat AI — Intelligent Workspace for Research, Documents & Automation
 
-NexaChat AI is a full-stack multimodal AI workspace: conversational assistance, source-backed live research, document understanding, professional Office/PDF generation, voice input/output, private contacts, and explicitly confirmed WhatsApp delivery in one responsive web application.
+NexaChat AI is a modern, full-stack multimodal AI productivity platform built for real-world execution. It combines streaming AI model access (OpenRouter, OpenAI, local Ollama), source-backed web research, document analysis, automated Office file creation (Excel, PowerPoint, Word, PDF), voice interaction, private contacts, and confirm-before-send WhatsApp messaging.
 
-It is designed as a production-minded portfolio project. Real external actions are visible and auditable, current facts are never silently fabricated in demo mode, and generated artifacts are validated before download.
+Designed with a sleek SaaS aesthetic, NexaChat AI provides both a high-converting Landing Page and an interactive AI Workspace.
 
-## What works
+---
 
-- Streaming OpenAI, Ollama, and deterministic no-key demo chat
-- Plan-first task execution with persisted steps, tool runs, status events, cancellation, and analytics
-- Live research through Tavily, Serper, or Brave with deduplicated citations and safe current-data refusal when no provider is configured
-- PDF, DOCX, PPTX, XLSX, CSV, JSON, text, image, and audio uploads with size, extension, signature, ZIP-expansion, and ownership checks
-- Excel, PowerPoint, Word, PDF, PNG chart, audio, and Markdown artifact generation
-- Voice recording, pause/resume, preview, transcription, editable transcript, and text-to-speech
-- Encrypted contacts, CSV import, search, edit, and per-owner isolation
-- Meta WhatsApp Cloud API text and original-audio delivery with an exact recipient/content confirmation gate; mock mode never sends externally
-- Searchable/pinnable/archivable chats, explicit user memory, light/dark themes, mobile layouts, and keyboard shortcuts
-- PostgreSQL/SQLite persistence, Redis rate limits and RQ jobs, migrations, metrics, Docker Compose, CI, and security tests
+## 🌟 Key Features
 
-## Architecture
+- **Multi-Model Intelligence**: Support for OpenRouter (free & paid models), OpenAI (`gpt-5-mini`, `gpt-4.1-mini`), local Ollama (`llama3.2`), or deterministic zero-key Demo mode.
+- **Plan-First AI Task Orchestration**: Complex user requests are parsed into clear, step-by-step task execution plans with user approval gates before running tools.
+- **Real-Time Web Research**: Integrated live search via Tavily, Serper, or Brave API with verified citations and retrieval dates.
+- **Automated Office Artifacts**: Generate downloadable `.xlsx` workbooks (with formulas & charts), 16:9 `.pptx` slides, `.docx` reports, `.pdf` documents, and `.mp3` audio files.
+- **Secure File Analysis**: Upload PDF, DOCX, PPTX, XLSX, CSV, JSON, images, and audio files for immediate text extraction and numeric analysis.
+- **Voice Messages & Speech**: Voice recording with wave visualization, pause/resume, audio preview, Whisper transcription, and text-to-speech auto-response.
+- **WhatsApp Integration**: Contact management with Fernet encryption, CSV import, and an explicit confirm-before-send gate for WhatsApp Cloud API.
+- **Modern UI/UX**: Redesigned futuristic interface with landing page view, dark/light themes, smooth entrance animations, mobile navigation drawer, and workspace analytics dashboard.
+
+---
+
+## 🏗️ Architecture Overview
 
 ```mermaid
 flowchart LR
-    UI["Responsive web workspace"] -->|"REST + SSE"| API["Flask API"]
-    API --> Guard["Session/Auth, CSRF, ownership, rate limits"]
-    API --> Planner["Intent router + persisted task plans"]
-    Planner --> AI["OpenAI / Ollama / demo"]
-    Planner --> Research["Tavily / Serper / Brave"]
-    Planner --> Files["Secure ingestion + extraction"]
-    Planner --> Artifacts["XLSX / PPTX / DOCX / PDF / PNG / audio"]
-    Planner --> WA["Confirmed Meta WhatsApp adapter"]
-    API --> DB[("SQLite / PostgreSQL")]
-    Planner --> Redis[("Redis / RQ")]
-    Files --> Store[("Private local volume")]
+    UI["Web Workspace (HTML5 + CSS3 + JS)"] -->|"REST API + SSE Streaming"| API["Flask Server"]
+    API --> Guard["Session Auth, CSRF, Ownership & Rate Limits"]
+    API --> Planner["Intent Router & Persisted Task Plans"]
+    Planner --> AI["AI Service (OpenRouter / OpenAI / Ollama / Demo)"]
+    Planner --> Research["Web Search (Tavily / Serper / Brave)"]
+    Planner --> Files["File Storage & Text Extraction"]
+    Planner --> Artifacts["Office Generators (XLSX / PPTX / DOCX / PDF)"]
+    Planner --> WA["WhatsApp Confirmation Gate"]
+    API --> DB[("Database (SQLite / PostgreSQL)")]
+    Planner --> Redis[("Redis / RQ Background Worker")]
 ```
 
-The request lifecycle and trust boundaries are detailed in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+---
 
-## Technology stack
+## 🛠️ Technology Stack
 
-Python 3.12, Flask, SQLAlchemy/Alembic, OpenAI/Ollama, PostgreSQL/SQLite, Redis/RQ, server-rendered HTML, modern JavaScript, SSE, openpyxl, python-pptx, python-docx, ReportLab/pypdf, Meta WhatsApp Cloud API, Docker/Gunicorn, Prometheus/Grafana, pytest, mypy, Ruff, Bandit, pip-audit, and GitHub Actions.
+- **Backend**: Python 3.12, Flask, SQLAlchemy, Alembic, OpenAI SDK (OpenRouter-compatible), Gunicorn, RQ
+- **Frontend**: Vanilla CSS3, Modern JavaScript (ES6+), Server-Rendered HTML5 Jinja Templates, SSE (Server-Sent Events)
+- **Database & Cache**: SQLite (local dev) / PostgreSQL (production), Redis (rate limiting & background jobs)
+- **Document Processing**: `openpyxl`, `python-pptx`, `python-docx`, `reportlab`, `pypdf`, `beautifulsoup4`
+- **Security**: Fernet symmetric encryption, CSRF protection, sanitized HTML/Markdown rendering, path traversal prevention
 
-## Quick start on Windows
+---
 
-Prerequisites: Python 3.12+, Node.js for the JavaScript syntax check, and optionally Docker Desktop.
+## 📁 Repository Structure
 
-```powershell
-Copy-Item .env.example .env
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-flask --app app.py db upgrade
-python app.py
+```text
+nexachat-ai/
+├── app/
+│   ├── routes/
+│   │   ├── api.py           # Core conversation & health API endpoints
+│   │   ├── web.py           # Web page router (index template)
+│   │   └── workspace.py     # Plans, uploads, artifacts, contacts, WhatsApp API
+│   ├── services/
+│   │   ├── ai.py            # OpenRouter / OpenAI / Ollama / Demo streaming service
+│   │   ├── artifacts.py     # Office file generators (Excel, PPT, Word, PDF)
+│   │   ├── files.py         # File validation, storage & text extraction
+│   │   ├── orchestrator.py  # Task planner & tool execution engine
+│   │   ├── security.py       # Fernet encryption & contact protection
+│   │   └── whatsapp.py      # Meta WhatsApp Cloud API integration
+│   ├── config.py            # Environment configuration
+│   ├── extensions.py        # SQLAlchemy, Limiter, Prometheus metrics
+│   └── models.py            # Database schemas
+├── static/
+│   ├── css/styles.css       # Complete UI/UX design system & animations
+│   └── js/app.js            # Frontend state manager, streaming & event handlers
+├── templates/
+│   └── index.html           # Main landing & app shell template
+├── tests/                   # Pytest test suite
+├── Dockerfile               # Production Docker container definition
+├── docker-compose.yml       # Full stack (App, Worker, Postgres, Redis)
+├── render.yaml              # Render backend deployment config
+├── app.py                   # Local development server entrypoint
+└── wsgi.py                  # WSGI entrypoint for Gunicorn
 ```
 
-Open `http://127.0.0.1:5000`. With the example defaults the app uses SQLite, demo AI, demo search, local private storage, and mock WhatsApp; no paid credential or external message is required.
+---
 
-## Enable real providers
+## 🚀 Local Development Setup
 
-Edit `.env` and restart the application.
+### Backend & Workspace
 
-OpenAI chat, transcription, and speech:
+1. **Clone & navigate to project**:
+   ```bash
+   cd nexachat-ai
+   ```
+
+2. **Create and activate Python virtual environment**:
+   - **Windows (PowerShell)**:
+     ```powershell
+     python -m venv .venv
+     .\.venv\Scripts\Activate.ps1
+     ```
+   - **macOS / Linux**:
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Setup environment file**:
+   ```bash
+   cp .env.example .env
+   ```
+
+5. **Initialize database & run development server**:
+   ```bash
+   flask --app app.py db upgrade
+   python app.py
+   ```
+
+6. **Open browser**:
+   - Web App: `http://localhost:5000`
+   - Health Check: `http://localhost:5000/health`
+
+---
+
+## 🔑 Environment Variables Reference
+
+Edit the repository-root `.env` file to configure OpenRouter. The API key is backend-only.
 
 ```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_key
-OPENAI_MODEL=gpt-5-mini
-TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe
-TTS_MODEL=tts-1
+# Server Configuration
+APP_URL=http://localhost:5000
+FRONTEND_URL=http://localhost:5000
+PORT=5000
+SECRET_KEY=dev-only-change-me-in-production
+
+AI_PROVIDER=openrouter
+AI_DEMO_MODE=false
+OPENROUTER_API_KEY=sk-or-v1-replace_with_real_key
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=openrouter/free
+
+# Web Research: tavily | serper | brave | demo
+SEARCH_PROVIDER=demo
+TAVILY_API_KEY=
+
+# Database & Cache (Optional - defaults to SQLite)
+DATABASE_URL=
+REDIS_URL=
 ```
 
-Live search (choose one):
+---
 
-```env
-SEARCH_PROVIDER=tavily
-TAVILY_API_KEY=your_key
-```
+## 🐳 Docker Support
 
-Use `serper` with `SERPER_API_KEY`, or `brave` with `BRAVE_SEARCH_API_KEY`. `SEARCH_PROVIDER=demo` intentionally refuses current rankings, prices, weather, news, and other live claims.
+To launch the full architecture (App, RQ Worker, PostgreSQL, Redis) using Docker:
 
-Real WhatsApp:
-
-```env
-WHATSAPP_MODE=meta
-META_WHATSAPP_ACCESS_TOKEN=your_system_user_token
-META_WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
-META_WHATSAPP_BUSINESS_ACCOUNT_ID=your_business_account_id
-META_WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_random_verify_token
-META_APP_SECRET=your_meta_app_secret
-META_GRAPH_API_VERSION=v23.0
-```
-
-Set the Meta webhook callback to `https://your-domain.example/api/whatsapp/webhook`. The UI still requires a fresh, exact confirmation before the provider call. See [DEPLOYMENT.md](DEPLOYMENT.md) for provider-console and production steps.
-
-## Docker Compose
-
-```powershell
-Copy-Item .env.example .env
+```bash
 docker compose up --build
 ```
 
-This starts the web process, RQ worker, PostgreSQL, and Redis. Persistent database, upload, and artifact volumes are retained by Compose.
+Access the application at `http://localhost:5000`.
 
-## Representative workflows
+---
 
-- “Research the 5 richest people in the world and create an Excel report.”
-- “Summarize the attached annual report and create a 10-slide board presentation.”
-- “Analyze this CSV, calculate quarterly growth, and produce a chart.”
-- “Record a voice note, transcribe it, edit the transcript, and draft a reply.”
-- “Message Rahul on WhatsApp that I will be 20 minutes late.” The app prepares a pending action and shows recipient, masked number, message, and provider mode before enabling Send.
+## 🌐 Deployment Readiness
 
-Current-data and multi-step tasks open a plan before execution. The right activity rail streams planning, searching, extracting, generating, validating, and completion events. Result cards expose sources and downloadable artifacts.
+### Render Deployment (Backend & Monolith)
 
-## Quality and security checks
+NexaChat AI includes a production-ready `render.yaml` configuration.
 
-```powershell
-.\verify.ps1
-python -m pytest --cov=app --cov-report=term-missing
-python -m pip_audit -r requirements.txt
-node --check static/js/app.js
-docker compose config
-docker build -t nexachat-ai .
+1. Connect your repository to Render.
+2. Render will automatically detect `render.yaml` and provision:
+   - Web Service running Docker runtime (`gunicorn wsgi:app`)
+   - Managed PostgreSQL Database
+   - Managed Redis Instance
+3. Set `OPENROUTER_API_KEY` in the Render Dashboard.
+4. Health check URL: `/health`.
+
+### Vercel Deployment (Frontend Static / SPA)
+
+If splitting the frontend into a standalone Vercel app in the future:
+1. Set `FRONTEND_URL` in backend `.env` to your Vercel domain to allow CORS.
+2. Point frontend API requests to your Render backend URL.
+
+---
+
+## 🧪 Testing
+
+Run the automated test suite:
+
+```bash
+pytest tests/ -v
 ```
 
-CI runs formatting, linting, type checks, tests, coverage, Bandit, dependency audit, syntax validation, and a container build. See [SECURITY.md](SECURITY.md) for the threat model.
+---
 
-## Documentation
+## 📜 License & Authors
 
-- [API reference](API.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Deployment](DEPLOYMENT.md)
-- [Security](SECURITY.md)
-- [Contributing](CONTRIBUTING.md)
-- [Demo walkthrough](docs/DEMO_WALKTHROUGH.md)
-- [Resume and interview guide](RESUME.md)
-- [OpenAPI](docs/openapi.yaml) and [Postman collection](docs/NexaChat.postman_collection.json)
-
-## Screenshots
-
-**Workspace home with quick-start actions**
-
-![workspace](docs/screenshots/workspace.png)
-
-**Streaming chat conversation in demo mode**
-
-![chat](docs/screenshots/chat.png)
-
-**Sidebar navigation and conversation history**
-
-![sidebar](docs/screenshots/sidebar.png)
-
-Additional captures for LinkedIn and portfolio use are listed in the [demo walkthrough](docs/DEMO_WALKTHROUGH.md).
-
-## Known limitations
-
-- Local filesystem storage is the default artifact backend. Production deployments can switch to S3-compatible object storage (`STORAGE_BACKEND=s3`) for AWS S3, Cloudflare R2, or Railway Buckets. See [DEPLOYMENT.md](DEPLOYMENT.md) for configuration.
-- Large-file extraction can be queued with Redis/RQ, but plan execution itself runs in the web request as an SSE stream.
-- PowerPoint files include designed slides and source metadata but do not yet write native speaker-note XML.
-- Meta WhatsApp templates, inbound conversation UI, OAuth/SSO, billing, and collaborative workspaces are outside this release.
-- `AUTH_REQUIRED=false` supports isolated guest sessions for local evaluation. Set it to `true` and use registered accounts before a public data-bearing deployment.
-
-## Ethical AI-assisted development statement
-
-AI-assisted tools were used to accelerate implementation and review. The architecture, provider boundaries, confirmation policy, tests, migrations, generated files, and deployment behavior were inspected and validated. Any resume claim should be used only if the candidate can explain the complete request lifecycle and reproduce the verification steps.
-
-MIT licensed.
+- **License**: MIT
+- **Author**: NexaChat AI Team

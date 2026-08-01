@@ -9,7 +9,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 The script creates `.venv` and `.env` when absent, installs runtime dependencies, applies database migrations, and starts `http://127.0.0.1:5000`.
 
-The defaults use demo AI, demo search, and mock WhatsApp, so no credential or external delivery is required. To enable real providers, edit `.env` and follow [DEPLOYMENT.md](DEPLOYMENT.md).
+The backend reads the repository-root `.env` file and uses OpenRouter by default. Add `OPENROUTER_API_KEY`, keep `AI_PROVIDER=openrouter`, and restart the process after changes. Search remains in demo mode and WhatsApp remains in mock mode unless separately configured.
 
 ## Full development setup
 

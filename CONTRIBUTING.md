@@ -11,7 +11,7 @@ flask --app app.py db upgrade
 python app.py
 ```
 
-Keep `AI_PROVIDER=demo`, `SEARCH_PROVIDER=demo`, and `WHATSAPP_MODE=mock` for credential-free development.
+Use `AI_PROVIDER=openrouter` for normal development. Credential-free AI is explicit: set `AI_DEMO_MODE=true`; search and WhatsApp may remain `demo` and `mock` respectively.
 
 ## Before opening a change
 

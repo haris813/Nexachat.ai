@@ -5,7 +5,7 @@ if (-not (Test-Path ".venv")) {
 python -m pip install -r requirements.txt
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
-    Write-Host "Created .env. Demo AI, demo search, and mock WhatsApp are ready without credentials." -ForegroundColor Green
+    Write-Host "Created .env. Add OPENROUTER_API_KEY before using AI chat." -ForegroundColor Yellow
 }
 flask --app app.py db upgrade
 python app.py

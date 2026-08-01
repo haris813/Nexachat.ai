@@ -6,7 +6,7 @@
 - Python 3.12 container runtime
 - PostgreSQL 16+, Redis 7+, and a private persistent volume mounted at `/app/data`
 - A secret manager for all credentials
-- At least one AI provider; optionally one live-search provider and a Meta WhatsApp business setup
+- An OpenRouter API key; optionally one live-search provider and a Meta WhatsApp business setup
 
 Generate local secret values:
 
@@ -19,26 +19,19 @@ Set the first output as `SECRET_KEY` and the second as `ENCRYPTION_KEY`. Use uni
 
 ## 2. Provider credentials
 
-### OpenAI
+### OpenRouter
 
-1. Create a project API key in the [OpenAI dashboard](https://platform.openai.com/api-keys).
-2. Add billing/usage limits and restrict project access.
-3. Store the key server-side only. OpenAI documents API keys as bearer credentials and warns against exposing them in browser code in its [authentication reference](https://platform.openai.com/docs/api-reference/authentication).
-4. Configure:
+Store the key only in the backend environment. For local development, the canonical file is the repository-root `.env`:
 
 ```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5-mini
-OPENAI_ALLOWED_MODELS=gpt-5-mini,gpt-5-nano,gpt-4.1-mini
-TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe
-TTS_MODEL=tts-1
-TTS_VOICE=alloy
+AI_PROVIDER=openrouter
+AI_DEMO_MODE=false
+OPENROUTER_API_KEY=sk-or-v1-replace_with_real_key
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=openrouter/free
 ```
 
-Model access varies by project. Keep the allowlist to models actually available and run a chat, transcription, and speech smoke test.
-
-For a local model, set `AI_PROVIDER=ollama`, `OLLAMA_BASE_URL`, and `OLLAMA_MODEL`. For credential-free evaluation, set `AI_PROVIDER=demo`.
+Restart every backend and worker process after changing `.env`. NexaChat never needs `OPENAI_API_KEY` when OpenRouter is selected. Demo AI is available only when explicitly enabled with `AI_DEMO_MODE=true`.
 
 ### Live search
 

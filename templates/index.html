@@ -3,16 +3,209 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="NexaChat AI - a multimodal AI productivity and automation workspace." />
-  <meta name="theme-color" content="#0a0d14" />
-  <title>NexaChat AI - Multimodal AI Workspace</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <meta name="description" content="NexaChat AI — Your intelligent workspace for conversations, research, documents, automation, and productivity." />
+  <meta name="keywords" content="AI, Productivity, Chat, Automation, Research, Documents, NexaChat" />
+  <meta name="author" content="NexaChat AI Team" />
+  <meta name="theme-color" content="#080b11" />
+
+  <!-- Open Graph / SEO -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="NexaChat AI — Multimodal AI Workspace" />
+  <meta property="og:description" content="Move from prompt to finished work. Research live data, generate Office documents, and automate tasks safely." />
+
+  <title>NexaChat AI — Intelligent Workspace for Research, Documents & Automation</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23806cff'/><path d='M30 70 V30 L55 55 V30 H70 V70 L45 45 V70 Z' fill='white'/></svg>" />
+
+  <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
+  <!-- Landing Page Container (Toggable) -->
+  <div class="landing-view hidden" id="landingView">
+    <header class="landing-nav">
+      <div class="landing-brand">
+        <span class="brand-mark">N</span>
+        <span>NexaChat <strong>AI</strong></span>
+      </div>
+      <nav class="landing-links">
+        <a href="#features">Features</a>
+        <a href="#use-cases">Use Cases</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#security">Security</a>
+      </nav>
+      <div class="landing-actions">
+        <button class="secondary-button" id="landingLoginBtn" type="button">Sign In</button>
+        <button class="primary-button" id="launchWorkspaceBtn" type="button">Launch App →</button>
+      </div>
+    </header>
+
+    <main class="landing-main">
+      <section class="hero-section">
+        <div class="hero-badge">
+          <span class="pulse-dot"></span> NEXT-GEN AI PRODUCTIVITY PLATFORM
+        </div>
+        <h1 class="hero-title">Your intelligent workspace for conversations, research, documents & automation.</h1>
+        <p class="hero-subtitle">
+          NexaChat AI connects live web research, document analysis, automated Office file generation, and verified action workflows in one premium interface.
+        </p>
+        <div class="hero-cta-group">
+          <button class="hero-primary-btn" id="heroStartBtn" type="button">Start Working Free</button>
+          <button class="hero-secondary-btn" id="heroDemoBtn" type="button">Try Demo Mode</button>
+        </div>
+
+        <!-- Product Preview Mockup -->
+        <div class="product-preview-card">
+          <div class="preview-header">
+            <div class="preview-dots"><span></span><span></span><span></span></div>
+            <div class="preview-title">NexaChat AI Workspace — Live Task Execution</div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-sidebar-stub">
+              <div class="stub-line wide"></div>
+              <div class="stub-line medium"></div>
+              <div class="stub-line short"></div>
+            </div>
+            <div class="preview-chat-stub">
+              <div class="stub-bubble user">Research global AI trends & generate 10-slide presentation</div>
+              <div class="stub-bubble assistant">
+                <strong>Task Plan Created:</strong>
+                <ul>
+                  <li>✓ Live Web Search (Tavily/Serper API)</li>
+                  <li>✓ Extract Key Statistics & Market Data</li>
+                  <li>✓ Generate PowerPoint (.pptx) Artifact</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature Section -->
+      <section class="landing-section" id="features">
+        <div class="section-tag">FEATURES</div>
+        <h2 class="section-title">Everything you need to turn prompts into real artifacts</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Real-Time Live Web Research</h3>
+            <p>Access up-to-date facts, web citations, and current statistics safely without knowledge cutoffs.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Automated Office Artifacts</h3>
+            <p>Create fully formatted Excel workbooks with charts, PowerPoint decks, and structured Word documents.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Confirm-Before-Send Actions</h3>
+            <p>Prepare WhatsApp messages and external communications with strict confirmation guardrails before dispatch.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🎙️</div>
+            <h3>Voice Input & Transcription</h3>
+            <p>Record voice prompts, review real-time transcripts, or convert text responses to audio speech.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📁</div>
+            <h3>Secure Document Analysis</h3>
+            <p>Upload PDF, DOCX, CSV, and image files for immediate text extraction and numeric analysis.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Multi-Model Intelligence</h3>
+            <p>Seamlessly switch between OpenRouter, OpenAI models, local Ollama, or fallback demo mode.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Use Cases Section -->
+      <section class="landing-section dark-alt" id="use-cases">
+        <div class="section-tag">USE CASES</div>
+        <h2 class="section-title">Built for high-output teams & ambitious individuals</h2>
+        <div class="usecases-grid">
+          <div class="usecase-card">
+            <h4>Market & Business Researchers</h4>
+            <p>Run web searches, extract structured tables, and compile market research directly into presentation slides.</p>
+          </div>
+          <div class="usecase-card">
+            <h4>Software Engineers & PMs</h4>
+            <p>Draft architecture spec docs, format JSON schemas, analyze data files, and generate executive summaries.</p>
+          </div>
+          <div class="usecase-card">
+            <h4>Data Analysts & Operations</h4>
+            <p>Process incoming dataset uploads into clean Excel sheets with auto-calculated formulas and visual summaries.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it Works -->
+      <section class="landing-section" id="how-it-works">
+        <div class="section-tag">WORKFLOW</div>
+        <h2 class="section-title">Three steps from request to execution</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <h3>Enter Your Goal or Upload</h3>
+            <p>Type your request in natural language or attach files like PDFs, CSVs, and audio recordings.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <h3>Review & Approve AI Plan</h3>
+            <p>NexaChat breaks down your goal into precise, transparent tool execution steps for your approval.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <h3>Download Artifacts & Results</h3>
+            <p>Receive live activity streaming, markdown reports, downloadable Office files, or confirmed actions.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security Trust Section -->
+      <section class="landing-section dark-alt" id="security">
+        <div class="section-tag">SECURITY & RELIABILITY</div>
+        <h2 class="section-title">Enterprise-grade safety & privacy defaults</h2>
+        <div class="security-banner">
+          <div class="sec-item">
+            <strong>✓ Local & S3 File Protection</strong>
+            <p>Uploaded documents and generated artifacts are stored securely with automated retention cleanup.</p>
+          </div>
+          <div class="sec-item">
+            <strong>✓ CSRF & Encrypted Credentials</strong>
+            <p>All state-changing requests require CSRF tokens, with Fernet-encrypted sensitive contact data.</p>
+          </div>
+          <div class="sec-item">
+            <strong>✓ Zero Unconfirmed Actions</strong>
+            <p>External communications require explicit user verification. No surprise automated messages.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="landing-cta-section">
+        <h2>Ready to upgrade your AI workflow?</h2>
+        <p>Experience an AI platform designed for real productivity, document creation, and research.</p>
+        <button class="hero-primary-btn" id="ctaLaunchBtn" type="button">Open NexaChat Workspace →</button>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="footer-brand">NexaChat AI © 2026. All rights reserved.</div>
+      <div class="footer-note">Built for modern startup productivity, research & document automation.</div>
+    </footer>
+  </div>
+
+  <!-- Workspace Shell -->
+  <div class="app-shell" id="appShell">
     <aside class="sidebar" id="sidebar" aria-label="Workspace navigation">
       <div class="brand-row">
-        <a class="brand" href="/" aria-label="NexaChat AI home">
+        <a class="brand" href="#" id="brandLink" aria-label="NexaChat AI home">
           <span class="brand-mark" aria-hidden="true">N</span>
           <span>NexaChat <strong>AI</strong></span>
         </a>
@@ -30,6 +223,7 @@
         <button class="nav-item" id="artifactsButton" type="button"><span>◇</span> Artifacts <b id="artifactCount">0</b></button>
         <button class="nav-item" id="contactsButton" type="button"><span>◎</span> Contacts</button>
         <button class="nav-item" id="statsButton" type="button"><span>⌁</span> Analytics</button>
+        <button class="nav-item" id="landingToggleNav" type="button"><span>🌐</span> Product Overview</button>
       </nav>
 
       <label class="conversation-search">
@@ -342,6 +536,6 @@
   </dialog>
 
   <div class="toast-region" id="toastRegion" aria-live="assertive"></div>
-  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  <script src="/static/js/app.js" defer></script>
 </body>
 </html>
