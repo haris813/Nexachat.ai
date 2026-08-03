@@ -1,0 +1,9 @@
+# Render runs the Python application. Vercel publishes only the generated static frontend.
+app.py
+wsgi.py
+app/
+migrations/
+tests/
+data/
+requirements.txt
+requirements-dev.txt
