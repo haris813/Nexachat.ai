@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python scripts/build_vercel_static.py",
+  "buildCommand": "npm run build",
   "outputDirectory": "public",
   "rewrites": [
     {

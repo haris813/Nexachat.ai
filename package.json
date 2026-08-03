@@ -1,0 +1,8 @@
+{
+  "name": "nexachat-vercel-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "python scripts/build_vercel_static.py"
+  }
+}
