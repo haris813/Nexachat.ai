@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://nexachat-ai-e47r.onrender.com/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://nexachat-ai-e47r.onrender.com/health"
+    },
+    {
+      "source": "/",
+      "destination": "/templates/index.html"
+    }
+  ]
+}
