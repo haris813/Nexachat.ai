@@ -1,4 +1,6 @@
 {
+  "buildCommand": "python scripts/build_vercel_static.py",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -10,7 +12,7 @@
     },
     {
       "source": "/",
-      "destination": "/templates/index.html"
+      "destination": "/index.html"
     }
   ]
 }
