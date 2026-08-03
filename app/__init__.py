@@ -59,7 +59,9 @@ def create_app(config_object: type[Config] = Config) -> Flask:
     app.register_blueprint(workspace_bp, url_prefix="/api")
 
     @app.get("/health")
+    @limiter.exempt
     def root_health():
+        """Keep the platform health check independent of request rate limits."""
         return jsonify({"status": "ok", "service": "nexachat-ai"})
 
     register_request_hooks(app)

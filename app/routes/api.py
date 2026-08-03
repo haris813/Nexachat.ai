@@ -112,11 +112,13 @@ def _effective_system_prompt(conversation: Conversation) -> str:
 
 
 @api_bp.get("/health")
+@limiter.exempt
 def health():
     return jsonify({"status": "ok", "service": "nexachat-ai"})
 
 
 @api_bp.get("/ready")
+@limiter.exempt
 def ready():
     db.session.execute(text("SELECT 1"))
     return jsonify({"status": "ready", "database": "ok"})
