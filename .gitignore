@@ -16,3 +16,4 @@ data/artifacts/
 data/tmp/
 data/qa-*/
 *.log
+public/
