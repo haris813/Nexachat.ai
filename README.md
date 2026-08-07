@@ -1,5 +1,6 @@
 # NexaChat AI — Intelligent Workspace for Research, Documents & Automation
-
+vercel=https://nexachat-ai-two.vercel.app/ 
+Render=https://nexachat-ai-e47r.onrender.com
 NexaChat AI is a modern, full-stack multimodal AI productivity platform built for real-world execution. It combines streaming AI model access (OpenRouter, OpenAI, local Ollama), source-backed web research, document analysis, automated Office file creation (Excel, PowerPoint, Word, PDF), voice interaction, private contacts, and confirm-before-send WhatsApp messaging.
 
 Designed with a sleek SaaS aesthetic, NexaChat AI provides both a high-converting Landing Page and an interactive AI Workspace.
@@ -123,6 +124,12 @@ nexachat-ai/
    - Health Check: `http://localhost:5000/health`
 
 ---
+<img width="1916" height="897" alt="Screenshot 2026-08-07 195006" src="https://github.com/user-attachments/assets/6803adf2-e3d3-4ea3-8363-b527e65b7985" />
+<img width="1907" height="916" alt="Screenshot 2026-08-07 194816" src="https://github.com/user-attachments/assets/dec43ee1-5b7c-4664-aadb-07beed3f9be9" />
+<img width="802" height="883" alt="Screenshot 2026-08-07 194721" src="https://github.com/user-attachments/assets/342d1ab7-0f3e-4379-a717-673ff426ff18" />
+<img width="1917" height="907" alt="Screenshot 2026-08-07 194635" src="https://github.com/user-attachments/assets/0bba1f82-a029-4932-9e75-b4d832bfc243" />
+<img width="1917" height="911" alt="Screenshot 2026-08-07 194550" src="https://github.com/user-attachments/assets/01767f5a-16a5-4cae-ac0b-d98e8f0a5ebb" />
+
 
 ## 🔑 Environment Variables Reference
 
